@@ -1,0 +1,27 @@
+{
+  "fecha": "2026-11-24T19:39:00",
+  "trabajos_enviados": 30,
+  "concurrencia": 6,
+  "aceptados": 30,
+  "completados": 30,
+  "fallidos": 0,
+  "bytes_totales": 9439249,
+  "latencia_carga_ms": {
+    "p50": 92,
+    "p95": 218,
+    "max": 296
+  },
+  "tiempo_total_s": 97.7,
+  "rendimiento_trabajos_min": 18.4,
+  "espera_en_cola_s": {
+    "promedio": 45.7,
+    "max": 91.88
+  },
+  "procesamiento_s": {
+    "promedio": 3.17,
+    "max": 3.78
+  },
+  "workers": [
+    "dfa854dc51a2"
+  ]
+}

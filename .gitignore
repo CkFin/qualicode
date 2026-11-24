@@ -1,0 +1,26 @@
+# Secretos: nunca versionar
+.env
+*.pem
+*.key
+secrets/
+infra/aws/estado.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Resultados locales de pruebas
+tests/resultados/
+*.log
+
+# Editor
+.qodo/
+.vscode/
+.idea/
+
+# Documentos de Office (el informe y la presentacion se entregan aparte)
+~$*
+*.docx
+*.pptx

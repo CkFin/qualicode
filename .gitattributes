@@ -1,0 +1,3 @@
+# Los scripts se ejecutan en Linux: forzar finales de linea LF
+* text=auto eol=lf
+*.pem binary

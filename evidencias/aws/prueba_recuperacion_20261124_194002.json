@@ -1,0 +1,56 @@
+[
+  {
+    "id": "R1a",
+    "prueba": "Con el trabajador detenido los trabajos quedan en cola",
+    "resultado": "PASA",
+    "detalle": "['pendiente', 'pendiente', 'pendiente']"
+  },
+  {
+    "id": "R1b",
+    "prueba": "Al reiniciar el trabajador procesa la cola pendiente",
+    "resultado": "PASA",
+    "detalle": "['completado', 'completado', 'completado']"
+  },
+  {
+    "id": "R2a",
+    "prueba": "El trabajo quedo 'en_ejecucion' al morir el trabajador",
+    "resultado": "PASA",
+    "detalle": ""
+  },
+  {
+    "id": "R2b",
+    "prueba": "El trabajo huerfano se recupera y completa",
+    "resultado": "PASA",
+    "detalle": "intentos=2"
+  },
+  {
+    "id": "R3a",
+    "prueba": "La API vuelve a estar disponible",
+    "resultado": "PASA",
+    "detalle": ""
+  },
+  {
+    "id": "R3b",
+    "prueba": "El trabajo sigue registrado tras el reinicio",
+    "resultado": "PASA",
+    "detalle": ""
+  },
+  {
+    "id": "R3c",
+    "prueba": "El resultado sigue descargable",
+    "resultado": "PASA",
+    "detalle": ""
+  },
+  {
+    "id": "R4a",
+    "prueba": "La plataforma vuelve a responder",
+    "resultado": "PASA",
+    "detalle": ""
+  },
+  {
+    "id": "R4b",
+    "prueba": "Datos y resultados persisten en los volumenes",
+    "resultado": "PASA",
+    "detalle": ""
+  }
+]

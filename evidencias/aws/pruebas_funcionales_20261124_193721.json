@@ -1,0 +1,247 @@
+[
+  {
+    "id": "A1",
+    "prueba": "Login con contrasena incorrecta",
+    "esperado": "401",
+    "obtenido": "401",
+    "resultado": "PASA"
+  },
+  {
+    "id": "A2",
+    "prueba": "Login productor Ana",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "A3",
+    "prueba": "Login productor Beto",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "A4",
+    "prueba": "Login tecnico Carla",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "A5",
+    "prueba": "Peticion sin sesion",
+    "esperado": "401",
+    "obtenido": "401",
+    "resultado": "PASA"
+  },
+  {
+    "id": "V1",
+    "prueba": "Rechaza ejecutable .exe",
+    "esperado": "415",
+    "obtenido": "415",
+    "resultado": "PASA"
+  },
+  {
+    "id": "V2",
+    "prueba": "Rechaza PDF disfrazado de .txt",
+    "esperado": "415",
+    "obtenido": "415",
+    "resultado": "PASA"
+  },
+  {
+    "id": "V3",
+    "prueba": "Rechaza CSV con columnas incorrectas",
+    "esperado": "422",
+    "obtenido": "422",
+    "resultado": "PASA"
+  },
+  {
+    "id": "V4",
+    "prueba": "Rechaza archivo > 2 MiB",
+    "esperado": "413",
+    "obtenido": "413",
+    "resultado": "PASA"
+  },
+  {
+    "id": "P1",
+    "prueba": "Carga valida queda 'pendiente' (respuesta inmediata)",
+    "esperado": "(201, 'pendiente')",
+    "obtenido": "(201, 'pendiente')",
+    "resultado": "PASA"
+  },
+  {
+    "id": "P2",
+    "prueba": "El trabajador completa el trabajo",
+    "esperado": "completado",
+    "obtenido": "completado",
+    "resultado": "PASA"
+  },
+  {
+    "id": "P3",
+    "prueba": "CSV con datos corruptos termina 'fallido' con error",
+    "esperado": "fallido",
+    "obtenido": "fallido",
+    "resultado": "PASA"
+  },
+  {
+    "id": "I1",
+    "prueba": "Beto consulta el trabajo de Ana por ID",
+    "esperado": "404",
+    "obtenido": "404",
+    "resultado": "PASA"
+  },
+  {
+    "id": "I2",
+    "prueba": "Beto intenta descargar el resultado de Ana",
+    "esperado": "404",
+    "obtenido": "404",
+    "resultado": "PASA"
+  },
+  {
+    "id": "I3",
+    "prueba": "Beto intenta eliminar el trabajo de Ana",
+    "esperado": "404",
+    "obtenido": "404",
+    "resultado": "PASA"
+  },
+  {
+    "id": "I4",
+    "prueba": "El listado de Beto no contiene trabajos de Ana",
+    "esperado": "False",
+    "obtenido": "False",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R1",
+    "prueba": "Productor intenta listar usuarios (admin)",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R2",
+    "prueba": "Productor intenta ver todos los trabajos",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R3",
+    "prueba": "Productor intenta liberar un resultado",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R4",
+    "prueba": "Tecnico intenta crear usuarios",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R5",
+    "prueba": "Tecnico ve todos los trabajos",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "R6",
+    "prueba": "Admin NO puede leer el contenido del analisis (minimo privilegio)",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N1",
+    "prueba": "Ana descarga antes de la liberacion",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N2",
+    "prueba": "Carla (tecnico) revisa el resultado",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N3",
+    "prueba": "Carla libera el resultado de Ana",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N4",
+    "prueba": "Ana descarga despues de la liberacion",
+    "esperado": "200",
+    "obtenido": "200",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N5",
+    "prueba": "El resultado referencia el SHA-256 del original",
+    "esperado": "1ff5129aff6c5e94df85f15402155d5429dce24427f815926a428716cd39cbfd",
+    "obtenido": "1ff5129aff6c5e94df85f15402155d5429dce24427f815926a428716cd39cbfd",
+    "resultado": "PASA"
+  },
+  {
+    "id": "N6",
+    "prueba": "Segregacion: Carla no puede liberar su propio trabajo",
+    "esperado": "403",
+    "obtenido": "403",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U28",
+    "prueba": "Trazabilidad del trabajo incluye CARGA:OK",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U29",
+    "prueba": "Trazabilidad del trabajo incluye TRABAJO_COMPLETADO:OK",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U30",
+    "prueba": "Trazabilidad del trabajo incluye LIBERACION:OK",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U31",
+    "prueba": "Trazabilidad del trabajo incluye DESCARGA:OK",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U32",
+    "prueba": "Trazabilidad del trabajo incluye DESCARGA:DENEGADO",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "U33",
+    "prueba": "Trazabilidad del trabajo incluye ACCESO_AJENO:DENEGADO",
+    "esperado": "True",
+    "obtenido": "True",
+    "resultado": "PASA"
+  },
+  {
+    "id": "S1",
+    "prueba": "Token anterior queda revocado tras cerrar sesion",
+    "esperado": "401",
+    "obtenido": "401",
+    "resultado": "PASA"
+  }
+]

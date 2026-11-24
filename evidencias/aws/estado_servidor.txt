@@ -1,0 +1,70 @@
+### sistema
+Ubuntu 24.04.5 LTS | kernel 7.0.0-1018-aws | up 2 hours, 1 minute
+
+### docker compose ps
+NAME                 IMAGE                  COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+qualicode-api-1      qualicode-api:1.0      "uvicorn api.main:ap…"   api       55 seconds ago   Up 49 seconds (healthy)   8000/tcp
+qualicode-db-1       qualicode-db:1.0       "docker-entrypoint.s…"   db        55 seconds ago   Up 54 seconds (healthy)   5432/tcp
+qualicode-proxy-1    qualicode-proxy:1.0    "/docker-entrypoint.…"   proxy     55 seconds ago   Up 34 seconds (healthy)   0.0.0.0:80->8080/tcp, [::]:80->8080/tcp
+qualicode-worker-1   qualicode-worker:1.0   "python -m worker.wo…"   worker    55 seconds ago   Up 49 seconds (healthy)   
+
+### docker stats
+CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT   MEM %     NET I/O           BLOCK I/O     PIDS
+a0babba9101f   qualicode-proxy-1    0.00%     3.156MiB / 128MiB   2.47%     49.2kB / 103kB    0B / 0B       3
+0acc0604e198   qualicode-worker-1   0.04%     24.56MiB / 256MiB   9.59%     17.2kB / 16.9kB   45.1kB / 0B   1
+d7145e7433ae   qualicode-api-1      0.35%     120.7MiB / 384MiB   31.43%    11.2kB / 46.4kB   0B / 0B       15
+c76483300961   qualicode-db-1       0.06%     25.59MiB / 384MiB   6.67%     24.5kB / 21.9kB   0B / 291kB    9
+
+### usuarios de procesos
+qualico+   78167   78115 /usr/local/bin/python3.12 /usr/local/bin/uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips * --no-access-log
+qualico+   78175   78125 python -m worker.worker
+
+### puertos
+tcp   LISTEN 0      4096        127.0.0.53%lo:53         0.0.0.0:*    users:(("systemd-resolve",pid=333,fd=15))            
+tcp   LISTEN 0      4096            127.0.0.1:46487      0.0.0.0:*    users:(("containerd",pid=645,fd=13))                 
+tcp   LISTEN 0      4096           127.0.0.54:53         0.0.0.0:*    users:(("systemd-resolve",pid=333,fd=17))            
+tcp   LISTEN 0      4096              0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=648,fd=3),("systemd",pid=1,fd=86))
+tcp   LISTEN 0      4096              0.0.0.0:80         0.0.0.0:*    users:(("docker-proxy",pid=78623,fd=7))              
+tcp   LISTEN 0      4096                 [::]:22            [::]:*    users:(("sshd",pid=648,fd=4),("systemd",pid=1,fd=87))
+tcp   LISTEN 0      4096                 [::]:80            [::]:*    users:(("docker-proxy",pid=78630,fd=7))              
+
+### ufw
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     LIMIT IN    Anywhere                   # SSH administracion (con limite de tasa)
+80/tcp                     ALLOW IN    Anywhere                   # HTTP QualiCode (proxy nginx)
+22/tcp (v6)                LIMIT IN    Anywhere (v6)              # SSH administracion (con limite de tasa)
+80/tcp (v6)                ALLOW IN    Anywhere (v6)              # HTTP QualiCode (proxy nginx)
+
+
+### ssh
+maxauthtries 3
+permitrootlogin no
+passwordauthentication no
+x11forwarding no
+allowtcpforwarding no
+allowusers ubuntu
+
+### fail2ban
+Status for the jail: sshd
+|- Filter
+|  |- Currently failed:	0
+|  |- Total failed:	0
+|  `- Journal matches:	_SYSTEMD_UNIT=sshd.service + _COMM=sshd
+`- Actions
+   |- Currently banned:	0
+   |- Total banned:	0
+   `- Banned IP list:	
+
+### actualizaciones
+active
+0 paquetes pendientes
+
+### permisos
+drwxr-x--- 13 root ubuntu 4096 Nov 24 19:34 /opt/qualicode
+-rw------- 1 root root 481 Nov 24 19:35 /opt/qualicode/.env

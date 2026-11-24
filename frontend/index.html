@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QualiCode</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>QUALICODE</h1>
+                <p>Plataforma segura de análisis de calidad de código · <span id="env-label">nube</span></p>
+            </div>
+            <div id="session-box" class="session hidden">
+                <span id="session-user"></span>
+                <span id="session-role" class="badge"></span>
+                <button id="btn-logout" class="btn-secondary">Cerrar sesión</button>
+            </div>
+        </header>
+
+        <!-- ============ LOGIN ============ -->
+        <section id="view-login" class="card login-card">
+            <h2>Iniciar sesión</h2>
+            <p class="muted">Cada persona ingresa con sus propias credenciales.</p>
+            <form id="login-form" autocomplete="on">
+                <label>Usuario <input id="login-user" name="username" required maxlength="30" autocomplete="username"></label>
+                <label>Contraseña <input id="login-pass" name="password" type="password" required maxlength="128" autocomplete="current-password"></label>
+                <button type="submit" class="btn-primary">Ingresar</button>
+            </form>
+            <p id="login-error" class="error"></p>
+        </section>
+
+        <!-- ============ APLICACION ============ -->
+        <section id="view-app" class="hidden">
+            <nav id="tabs" class="tabs"></nav>
+
+            <!-- Mis trabajos -->
+            <section class="tab-panel" data-tab="mine">
+                <div class="grid-2">
+                    <div class="card">
+                        <h2>Cargar archivo para análisis</h2>
+                        <form id="upload-form">
+                            <input id="upload-file" type="file" accept=".csv,.txt" required>
+                            <button type="submit" class="btn-primary">Enviar a procesamiento</button>
+                        </form>
+                        <ul class="policy">
+                            <li>Permitidos: <b>.csv</b> (métricas de calidad) y <b>.txt</b> (bitácora de revisión), UTF-8.</li>
+                            <li>Tamaño máximo: <b>2 MiB</b>. Se rechazan binarios disfrazados.</li>
+                            <li>CSV con columnas: <code>modulo, fecha, cobertura, complejidad, defectos</code> y opcional
+                                <code>lenguaje</code> (python, javascript, java, go, csharp, php) para aplicar el umbral
+                                de complejidad de cada lenguaje.</li>
+                            <li>Resultado: informe de calidad con semáforo por módulo y esfuerzo estimado de pruebas,
+                                refactorización y corrección de defectos.</li>
+                            <li>Desarrolladores: máximo 5 trabajos en cola a la vez.</li>
+                            <li>El informe se descarga cuando un revisor QA lo <b>libera</b>.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h2>Consultar trabajo por ID</h2>
+                        <p class="muted">Prueba de aislamiento: un ID ajeno responde "no encontrado".</p>
+                        <form id="lookup-form" class="inline">
+                            <input id="lookup-id" placeholder="UUID del trabajo" required>
+                            <button type="submit" class="btn-secondary">Consultar</button>
+                            <button type="button" id="lookup-download" class="btn-secondary">Descargar</button>
+                        </form>
+                        <pre id="lookup-out" class="out"></pre>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Mis trabajos</h2>
+                        <span class="muted">Se actualiza cada 4 s</span>
+                    </div>
+                    <div class="table-wrap"><table id="tbl-mine"></table></div>
+                </div>
+            </section>
+
+            <!-- Revision tecnica -->
+            <section class="tab-panel" data-tab="review">
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Todos los trabajos · Revisión técnica</h2>
+                        <select id="review-filter">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_ejecucion">En ejecución</option>
+                            <option value="completado">Completado</option>
+                            <option value="fallido">Fallido</option>
+                            <option value="sin_liberar">Completados sin liberar</option>
+                        </select>
+                    </div>
+                    <div class="table-wrap"><table id="tbl-review"></table></div>
+                </div>
+            </section>
+
+            <!-- Usuarios -->
+            <section class="tab-panel" data-tab="users">
+                <div class="grid-2">
+                    <div class="card">
+                        <h2>Crear usuario</h2>
+                        <form id="user-form">
+                            <label>Usuario <input id="nu-name" required pattern="[a-z0-9_.\-]{3,30}" title="3-30 caracteres: a-z 0-9 _ . -"></label>
+                            <label>Contraseña <input id="nu-pass" type="password" required minlength="10"></label>
+                            <label>Rol
+                                <select id="nu-role">
+                                    <option value="productor">Desarrollador (Usuario)</option>
+                                    <option value="tecnico">Revisor QA (Operador)</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </label>
+                            <button type="submit" class="btn-primary">Crear</button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h2>Matriz de permisos (servidor)</h2>
+                        <div class="table-wrap"><table id="tbl-matrix"></table></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Usuarios registrados</h2>
+                    <div class="table-wrap"><table id="tbl-users"></table></div>
+                </div>
+            </section>
+
+            <!-- Auditoria -->
+            <section class="tab-panel" data-tab="audit">
+                <div class="card">
+                    <h2>Reporte de actividad (últimas 24 h)</h2>
+                    <div class="table-wrap"><table id="tbl-report"></table></div>
+                </div>
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Registro de auditoría</h2>
+                        <form id="audit-form" class="inline">
+                            <input id="af-user" placeholder="usuario">
+                            <input id="af-action" placeholder="acción (LOGIN, DESCARGA...)">
+                            <select id="af-outcome">
+                                <option value="">Resultado</option>
+                                <option>OK</option><option>DENEGADO</option><option>ERROR</option>
+                            </select>
+                            <input id="af-resource" placeholder="recurso (job:UUID)">
+                            <button type="submit" class="btn-secondary">Filtrar</button>
+                        </form>
+                    </div>
+                    <div class="table-wrap"><table id="tbl-audit"></table></div>
+                </div>
+            </section>
+
+            <!-- Sistema -->
+            <section class="tab-panel" data-tab="system">
+                <div id="system-cards" class="stats"></div>
+                <div class="grid-2">
+                    <div class="card">
+                        <h2>Trabajadores (latido)</h2>
+                        <div class="table-wrap"><table id="tbl-workers"></table></div>
+                    </div>
+                    <div class="card">
+                        <h2>Contenedor API (cgroups)</h2>
+                        <pre id="sys-api" class="out"></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visor de resultado -->
+            <section id="result-viewer" class="card hidden">
+                <div class="card-head">
+                    <h2 id="result-title">Resultado</h2>
+                    <div>
+                        <button id="result-print" class="btn-primary">Imprimir / PDF</button>
+                        <button id="result-download" class="btn-secondary">Descargar JSON</button>
+                        <button id="result-close" class="btn-secondary">Cerrar</button>
+                    </div>
+                </div>
+                <div id="result-body"></div>
+            </section>
+        </section>
+
+        <div id="toast" class="toast hidden"></div>
+    </div>
+    <script src="/app.js"></script>
+</body>
+
+</html>

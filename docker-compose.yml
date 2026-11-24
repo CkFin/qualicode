@@ -1,0 +1,154 @@
+# =====================================================================
+#  QualiCode - Plataforma segura de procesamiento de archivos
+#  Orquestacion de servicios (Docker Compose v2)
+#
+#  Red "edge"    : proxy <-> api            (unico puerto publicado: 80)
+#  Red "backend" : api <-> worker <-> db    (internal: sin salida a Internet)
+#
+#  Arranque:  docker compose up -d --build
+#  Estado:    docker compose ps   |   docker stats
+# =====================================================================
+name: qualicode
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ---------------------------------------------------------------
+  # Proxy inverso: sirve el frontend y reenvia /api/ a la API.
+  # Imagen nginx "unprivileged": corre como uid 101, no como root.
+  # ---------------------------------------------------------------
+  proxy:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: proxy/Dockerfile
+    image: qualicode-proxy:1.0
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [edge]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+
+  # ---------------------------------------------------------------
+  # API (FastAPI): autenticacion, autorizacion, carga y consultas.
+  # No publica puertos: solo es alcanzable desde el proxy.
+  # ---------------------------------------------------------------
+  api:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    image: qualicode-api:1.0
+    environment:
+      SERVICE_NAME: api
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
+      DB_USER: ${APP_DB_USER:?falta APP_DB_USER en .env}
+      DB_PASSWORD: ${APP_DB_PASSWORD:?falta APP_DB_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET en .env}
+      JWT_TTL_MIN: ${JWT_TTL_MIN:-30}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?falta ADMIN_PASSWORD en .env}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-2097152}
+      MAX_ACTIVE_JOBS_PER_USER: ${MAX_ACTIVE_JOBS_PER_USER:-5}
+      DEPLOY_ENV: ${DEPLOY_ENV:-local}
+    volumes:
+      - storage:/data/storage
+      - logs:/data/logs
+    expose: ["8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [edge, backend]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+
+  # ---------------------------------------------------------------
+  # Trabajador: toma trabajos de la cola (PostgreSQL SKIP LOCKED),
+  # los procesa y guarda resultados. Sin acceso a Internet ni puertos.
+  # Escalable: docker compose up -d --scale worker=2
+  # ---------------------------------------------------------------
+  worker:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    image: qualicode-worker:1.0
+    environment:
+      SERVICE_NAME: worker
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${APP_DB_USER}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      PROCESSING_DELAY_SECONDS: ${PROCESSING_DELAY_SECONDS:-3}
+    volumes:
+      - storage:/data/storage
+      - logs:/data/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    mem_limit: 256m       # Limite de memoria (reto 4: modificar aqui)
+    cpus: 0.50            # Maximo medio nucleo de CPU
+    pids_limit: 64
+
+  # ---------------------------------------------------------------
+  # Base de datos: usuarios, trabajos (cola), auditoria.
+  # Sin puertos publicados. Solo en la red interna "backend".
+  # ---------------------------------------------------------------
+  db:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    image: qualicode-db:1.0
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+
+volumes:
+  pgdata: {}
+  storage: {}
+  logs: {}

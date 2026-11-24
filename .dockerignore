@@ -1,0 +1,11 @@
+.env
+.git
+.qodo
+*.pem
+secrets
+dataset
+docs
+evidencias
+tests
+infra
+**/__pycache__
