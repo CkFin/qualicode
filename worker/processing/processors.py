@@ -251,7 +251,7 @@ def process_csv(text: str) -> dict:
 CATEGORIAS = {
     "seguridad": ("vulnerabilidad", "inyeccion", "xss", "secreto", "credencial", "token", "csrf"),
     "errores": ("bug", "error", "excepcion", "fallo", "crash", "nulo"),
-    "rendimiento": ("lento", "latencia", "memoria", "rendimiento", "timeout"),
+    "rendimiento": ("lento", "lenta", "lentas", "latencia", "memoria", "rendimiento", "timeout"),
     "pruebas": ("prueba", "pruebas", "test", "cobertura"),
     "mantenibilidad": ("refactor", "duplicado", "deuda", "estilo", "documentacion"),
 }
@@ -266,7 +266,8 @@ def process_txt(text: str) -> dict:
     lines = text.splitlines()
 
     eventos = Counter()
-    por_modulo = defaultdict(lambda: {"menciones": 0, "seguridad": 0, "problemas": Counter()})
+    por_modulo = defaultdict(lambda: {"menciones": 0, "seguridad": 0, "errores": 0, "rendimiento": 0,
+                                      "fallidos": 0, "problemas": Counter()})
     incidencias, builds, fechas = [], [], []
     fallidos = set()
     for line in lines:
@@ -289,24 +290,55 @@ def process_txt(text: str) -> dict:
             eventos[c] += 1
         for m in modulos:
             por_modulo[m]["menciones"] += 1
+            for c in ("seguridad", "errores", "rendimiento"):
+                if c in cats:
+                    por_modulo[m][c] += 1
+            if "fallido" in tokens and "build" in tokens:
+                por_modulo[m]["fallidos"] += 1
         if "seguridad" in cats or "errores" in cats:
             claves = CATEGORIAS["seguridad"] + CATEGORIAS["errores"]
             problema = next(k for k in claves if k in tokens)
             for m in modulos:
-                por_modulo[m]["seguridad"] += 1
                 por_modulo[m]["problemas"][problema] += 1
             incidencias.append({"fecha": fecha, "modulos": modulos, "problema": problema,
                                 "nota": line.strip()[:160]})
 
     alertas = []
     modulos_out = []
-    for m, d in sorted(por_modulo.items(), key=lambda x: (-x[1]["seguridad"], x[0])):
+    for m, d in por_modulo.items():
         principal = d["problemas"].most_common(1)[0] if d["problemas"] else None
-        modulos_out.append({"modulo": m, "menciones": d["menciones"], "incidencias": d["seguridad"],
-                            "problema_principal": principal[0] if principal else None})
+        total = d["seguridad"] + d["errores"]
+        # Semaforo: cualquier hallazgo de seguridad o error exige atencion;
+        # errores repetidos (3+) o varios hallazgos de seguridad son criticos.
+        if d["errores"] >= 3 or d["seguridad"] >= 3:
+            estado = "critico"
+        elif total or d["rendimiento"]:
+            estado = "atencion"
+        else:
+            estado = "optimo"
+        recs = []
+        if d["seguridad"]:
+            recs.append({"area": "Auditoría de seguridad",
+                         "accion": "Validar y escapar entradas y salidas, y pasar un escáner SAST antes del próximo despliegue",
+                         "dosis": f"{d['seguridad']} hallazgo{'s' if d['seguridad'] != 1 else ''}"})
+        if d["errores"]:
+            recs.append({"area": "Corrección de errores",
+                         "accion": "Escribir una prueba de regresión que reproduzca cada error antes de corregirlo",
+                         "dosis": f"{d['errores']} reporte{'s' if d['errores'] != 1 else ''}"})
+        if d["rendimiento"]:
+            recs.append({"area": "Rendimiento",
+                         "accion": "Perfilar las consultas lentas y agregar índices o caché",
+                         "dosis": f"{d['rendimiento']} reporte{'s' if d['rendimiento'] != 1 else ''}"})
+        modulos_out.append({"modulo": m, "estado": estado, "menciones": d["menciones"], "incidencias": total,
+                            "seguridad": d["seguridad"], "errores": d["errores"], "rendimiento": d["rendimiento"],
+                            "builds_fallidos": d["fallidos"],
+                            "problema_principal": principal[0] if principal else None,
+                            "recomendaciones": recs})
         if principal and principal[1] >= 3:
             alertas.append(f"{m}: {principal[1]} reportes de {principal[0]}. "
                            "Programar revisión dedicada y plan de corrección")
+    modulos_out.sort(key=lambda x: (ESTADO_ORDEN[x["estado"]], -x["incidencias"], x["modulo"]))
+    resumen = Counter(x["estado"] for x in modulos_out)
 
     fechas.sort()
     return {
@@ -319,6 +351,8 @@ def process_txt(text: str) -> dict:
         "notas": len(fechas),
         "eventos_por_categoria": dict(eventos.most_common()),
         "modulos": modulos_out,
+        "resumen": {"modulos": len(modulos_out), "optimo": resumen["optimo"],
+                    "atencion": resumen["atencion"], "critico": resumen["critico"]},
         "incidencias": incidencias[-25:],   # las 25 mas recientes
         "builds": {"duracion_min": _describe(builds) if builds else None, "fallidos": len(fallidos)},
         "alertas": alertas,

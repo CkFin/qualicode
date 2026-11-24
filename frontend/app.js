@@ -9,7 +9,7 @@ const state = { me: null, tab: null, timer: null, result: null };
 
 const TABS = [
     { id: 'mine', label: 'Mis trabajos', perm: 'jobs:create', load: loadMine },
-    { id: 'review', label: 'Revisión técnica', perm: 'jobs:read_all', load: loadReview },
+    { id: 'review', label: 'Revisión QA', perm: 'jobs:read_all', load: loadReview },
     { id: 'users', label: 'Usuarios y roles', perm: 'users:manage', load: loadUsers },
     { id: 'audit', label: 'Auditoría', perm: 'audit:read', load: loadAudit },
     { id: 'system', label: 'Sistema', perm: 'system:status', load: loadSystem },
@@ -253,10 +253,10 @@ function statCard(label, value, sub = '', cls = '') {
 
 function reportHeader(job, data, kind) {
     const meta = data._metadatos || {};
-    const code = `AL-${String(job.id).slice(0, 8).toUpperCase()}`;
+    const code = `QC-${String(job.id).slice(0, 8).toUpperCase()}`;
     const release = job.released
         ? badge(`Liberado por ${job.released_by}`, 'rel-si')
-        : badge('BORRADOR · pendiente de revisión técnica', 'rel-no');
+        : badge('BORRADOR · pendiente de revisión QA', 'rel-no');
     const p = data.periodo || {};
     return el('div', { class: 'report-head' },
         el('div', {},
@@ -309,6 +309,26 @@ function renderQuality(job, data, body) {
     body.append(el('p', { class: 'disclaimer' }, data.advertencia));
 }
 
+function logModuleCard(p) {
+    const [label, cls] = ESTADO[p.estado] || [p.estado, ''];
+    const nivel = (n, grave) => (n === 0 ? 'sem-ok' : (n >= grave ? 'sem-bad' : 'sem-warn'));
+    const row = (name, n, texto, grave) => el('tr', {},
+        el('td', {}, name), el('td', { class: 'num' }, String(n)),
+        el('td', {}, el('span', { class: `dot ${nivel(n, grave)}` }), texto));
+    const recs = p.recomendaciones.length
+        ? el('ul', { class: 'recs' }, p.recomendaciones.map((r) => el('li', {},
+            el('b', {}, r.area), el('span', { class: 'dose' }, r.dosis), el('div', { class: 'muted' }, r.accion))))
+        : el('p', { class: 'ok-text' }, 'Sin hallazgos: mantener las prácticas actuales.');
+    return el('div', { class: `plot ${cls}` },
+        el('div', { class: 'plot-head' }, el('div', {}, el('b', {}, p.modulo), ' · bitácora'), badge(label, cls)),
+        el('table', { class: 'plot-table' },
+            row('Seguridad', p.seguridad, p.seguridad ? 'Hallazgos de seguridad reportados' : 'Sin hallazgos', 3),
+            row('Errores', p.errores, p.errores ? `Problema principal: ${p.problema_principal || 'error'}` : 'Sin errores reportados', 3),
+            row('Rendimiento', p.rendimiento, p.rendimiento ? 'Consultas o procesos lentos' : 'Sin reportes', 5)),
+        el('div', { class: 'muted' }, `${p.menciones} menciones en la bitácora · builds fallidos ${p.builds_fallidos}`),
+        el('div', { class: 'recs-title' }, 'Recomendaciones'), recs);
+}
+
 function renderNotes(job, data, body) {
     body.append(reportHeader(job, data, 'Resumen de bitácora de revisión de código'));
     const ev = data.eventos_por_categoria || {};
@@ -322,20 +342,23 @@ function renderNotes(job, data, body) {
     if (data.alertas && data.alertas.length) {
         body.append(el('div', { class: 'priorities' }, el('b', {}, 'Alertas'), el('ul', {}, data.alertas.map((a) => el('li', {}, a)))));
     }
-    const wrap = el('div', { class: 'grid-2' });
-    const tp = el('table');
-    tp.append(el('tr', {}, ['Módulo', 'Menciones', 'Incidencias', 'Problema principal'].map((h) => el('th', {}, h))));
-    (data.modulos || []).forEach((p) => tp.append(el('tr', {}, el('td', {}, p.modulo), el('td', {}, p.menciones),
-        el('td', {}, p.incidencias), el('td', {}, p.problema_principal || '—'))));
-    const tc = el('table');
-    tc.append(el('tr', {}, ['Categoría', 'Eventos'].map((h) => el('th', {}, h))));
-    Object.entries(ev).forEach(([k, v]) => tc.append(el('tr', {}, el('td', {}, CATEGORIA[k] || k), el('td', {}, v))));
-    wrap.append(el('div', { class: 'table-wrap' }, tp), el('div', { class: 'table-wrap' }, tc));
-    body.append(wrap);
+    if (data.resumen) {
+        const r = data.resumen;
+        body.append(el('div', { class: 'stats' },
+            statCard('Módulos', r.modulos, `${Object.values(ev).reduce((a, b) => a + b, 0)} eventos`),
+            statCard('Óptimos', r.optimo, 'sin hallazgos', 'sem-ok'),
+            statCard('Atención', r.atencion, 'requieren revisión', 'sem-warn'),
+            statCard('Críticos', r.critico, 'acción inmediata', 'sem-bad')));
+    }
+    if (data.modulos && data.modulos.length && data.modulos[0].estado) {
+        body.append(el('div', { class: 'plots' }, data.modulos.map(logModuleCard)));
+    }
+    const resumenCat = Object.entries(ev).map(([k, v]) => `${CATEGORIA[k] || k}: ${v}`).join(' · ');
+    if (resumenCat) body.append(el('p', { class: 'muted' }, `Eventos por categoría · ${resumenCat}`));
     if (data.incidencias && data.incidencias.length) {
         const ti = el('table');
         ti.append(el('tr', {}, ['Fecha', 'Módulo', 'Problema', 'Nota'].map((h) => el('th', {}, h))));
-        data.incidencias.slice(-10).reverse().forEach((x) => ti.append(el('tr', {}, el('td', {}, x.fecha || '—'),
+        data.incidencias.slice(-5).reverse().forEach((x) => ti.append(el('tr', {}, el('td', {}, x.fecha || '—'),
             el('td', {}, x.modulos.join(', ') || '—'), el('td', {}, x.problema), el('td', { class: 'muted' }, x.nota))));
         body.append(el('div', { class: 'recs-title' }, 'Últimas incidencias registradas'), el('div', { class: 'table-wrap' }, ti));
     }
@@ -364,7 +387,7 @@ $('result-download').addEventListener('click', () => {
     document.body.append(a); a.click(); a.remove();
 });
 
-// --------------------------------------------------------- revisión técnica
+// --------------------------------------------------------- revisión QA
 async function loadReview() {
     let jobs = await api('/api/jobs?scope=all');
     const f = $('review-filter').value;
